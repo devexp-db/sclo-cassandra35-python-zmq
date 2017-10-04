@@ -1,7 +1,10 @@
-%global with_python3 1
+%{?scl:%scl_package python-zeromq}
+%{!?scl:%global pkg_name %{name}}
+
+%global with_python3 0
 
 # we don't want to provide private python extension libs in either the python2 or python3 dirs
-%global __provides_exclude_from ^(%{python2_sitearch}|%{python3_sitearch})/.*\\.so$
+%global __provides_exclude_from ^(%{python2_sitearch}|%{python_sitearch})/.*\\.so$
 
 %global checkout 18f5d061558a176f5496aa8e049182c1a7da64f6
 
@@ -10,9 +13,9 @@
 
 %global run_tests 1
 
-Name:           python-zmq
+Name:           %{?scl_prefix}python-zmq
 Version:        16.0.2
-Release:        5%{?dist}
+Release:        6%{?dist}
 Summary:        Software library for fast, message-based applications
 
 Group:          Development/Libraries
@@ -29,8 +32,8 @@ BuildRequires:  chrpath
 
 BuildRequires:  python2-devel
 BuildRequires:  python-setuptools
-BuildRequires:  zeromq-devel
-BuildRequires:  Cython
+BuildRequires:  %{?scl_prefix}zeromq-devel
+BuildRequires:  %{?scl_prefix}python2-Cython
 %if 0%{?run_tests}
 BuildRequires:  pytest
 BuildRequires:  python-tornado
@@ -41,16 +44,18 @@ BuildRequires:  python-tornado
 #BuildRequires:  czmq-devel
 
 %if 0%{?with_python3}
-BuildRequires:  python%{python3_pkgversion}-devel
-BuildRequires:  python%{python3_pkgversion}-setuptools
+BuildRequires:  python%{python_pkgversion}-devel
+BuildRequires:  python%{python_pkgversion}-setuptools
 # needed for 2to3
 BuildRequires:  python-tools
 %if 0%{?run_tests}
-BuildRequires:  python%{python3_pkgversion}-pytest
-BuildRequires:  python%{python3_pkgversion}-tornado
+BuildRequires:  python%{python_pkgversion}-pytest
+BuildRequires:  python%{python_pkgversion}-tornado
 %endif
 %endif
 
+%{?scl:Requires: %scl_runtime}
+%{?scl:BuildRequires: %scl-scldevel}
 
 %description
 The 0MQ lightweight messaging kernel is a library which extends the
@@ -62,10 +67,10 @@ multiple transport protocols and more.
 
 This package contains the python bindings.
 
-%package -n python2-zmq
+%package -n %{?scl_prefix}python2-zmq
 Summary:        Software library for fast, message-based applications
-%{?python_provide:%python_provide python2-%{modname}}
-%description -n python2-zmq
+%{!?scl:%{?python_provide:%python_provide python2-%{modname}}}
+%description -n %{?scl_prefix}python2-zmq
 The 0MQ lightweight messaging kernel is a library which extends the
 standard socket interfaces with features traditionally provided by
 specialized messaging middle-ware products. 0MQ sockets provide an
@@ -76,13 +81,13 @@ multiple transport protocols and more.
 This package contains the python bindings.
 
 
-%package -n python2-zmq-tests
+%package -n %{?scl_prefix}python2-zmq-tests
 Summary:        Software library for fast, message-based applications
 Group:          Development/Libraries
 License:        LGPLv3+
 Requires:       python2-zmq = %{version}-%{release}
-%{?python_provide:%python_provide python2-%{modname}-tests}
-%description -n python2-zmq-tests
+%{!?scl:%{?python_provide:%python_provide python2-%{modname}-tests}}
+%description -n %{?scl_prefix}python2-zmq-tests
 The 0MQ lightweight messaging kernel is a library which extends the
 standard socket interfaces with features traditionally provided by
 specialized messaging middle-ware products. 0MQ sockets provide an
@@ -94,12 +99,12 @@ This package contains the testsuite for the python bindings.
 
 
 %if 0%{?with_python3}
-%package -n python%{python3_pkgversion}-zmq
+%package -n %{?scl_prefix}python%{python_pkgversion}-zmq
 Summary:        Software library for fast, message-based applications
 Group:          Development/Libraries
 License:        LGPLv3+
-%{?python_provide:%python_provide python%{python3_pkgversion}-%{modname}}
-%description -n python%{python3_pkgversion}-zmq
+%{!?scl:%{?python_provide:%python_provide python%{python_pkgversion}-%{modname}}}
+%description -n %{?scl_prefix}python%{python_pkgversion}-zmq
 The 0MQ lightweight messaging kernel is a library which extends the
 standard socket interfaces with features traditionally provided by
 specialized messaging middle-ware products. 0MQ sockets provide an
@@ -110,13 +115,13 @@ multiple transport protocols and more.
 This package contains the python bindings.
 
 
-%package -n python%{python3_pkgversion}-zmq-tests
+%package -n %{?scl_prefix}python%{python_pkgversion}-zmq-tests
 Summary:        Software library for fast, message-based applications
 Group:          Development/Libraries
 License:        LGPLv3+
-Requires:       python%{python3_pkgversion}-zmq = %{version}-%{release}
-%{?python_provide:%python_provide python%{python3_pkgversion}-%{modname}-tests}
-%description -n python%{python3_pkgversion}-zmq-tests
+Requires:       python%{python_pkgversion}-zmq = %{version}-%{release}
+%{!?scl:%{?python_provide:%python_provide python%{python_pkgversion}-%{modname}-tests}}
+%description -n %{?scl_prefix}python%{python_pkgversion}-zmq-tests
 The 0MQ lightweight messaging kernel is a library which extends the
 standard socket interfaces with features traditionally provided by
 specialized messaging middle-ware products. 0MQ sockets provide an
@@ -156,70 +161,81 @@ chmod -x examples/pubsub/topics_sub.py
 
 
 %build
+%{?scl:scl enable %{scl} - << "EOF"}
 CFLAGS="%{optflags}" %{__python2} setup.py build_ext --inplace
 %py2_build
 
 %if 0%{?with_python3}
-CFLAGS="%{optflags}" %{__python3} setup.py build_ext --inplace
+CFLAGS="%{optflags}" %{__python} setup.py build_ext --inplace
 %py3_build
 %endif # with_python3
+%{?scl:EOF}
 
 
 
 %install
+%{?scl:scl enable %{scl} - << "EOF"}
 %global RPATH /zmq/{backend/cython,devices}
 # Must do the python3 install first because the scripts in /usr/bin are
 # overwritten with every setup.py install (and we want the python2 version
 # to be the default for now).
 %if 0%{?with_python3}
-%py3_install
+%{py3_install -- --prefix %{?_prefix}}
 
 %endif # with_python3
 
 
-%py2_install
+%{py2_install -- --prefix %{?_prefix}}
+%{?scl:EOF}
 
 
 %check
 %if 0%{?run_tests}
+    %{?scl:scl enable %{scl} "}
     # Make sure we import from the install directory
     #rm zmq/__*.py
-    PYTHONPATH=%{buildroot}%{python3_sitearch} \
-        %{__python3} setup.py test
+    %if 0%{?with_python3}
+    PYTHONPATH=%{buildroot}%{python_sitearch} \
+        %{__python} setup.py test
+    %endif # with_python3
 
     # Remove Python 3 only tests
     #rm  zmq/asyncio.py zmq/auth/asyncio.py \
     #    zmq/tests/*test_asyncio.py zmq/tests/test_future.py
     PYTHONPATH=%{buildroot}%{python2_sitearch} \
         %{__python2} setup.py test
+    %{?scl:"}
 %endif
 
 
-%files -n python2-%{modname}
+%files -n %{?scl_prefix}python2-%{modname}
 %license COPYING.*
 %doc README.md examples/
 %{python2_sitearch}/%{srcname}-*.egg-info
 %{python2_sitearch}/zmq
 %exclude %{python2_sitearch}/zmq/tests
 
-%files -n python2-%{modname}-tests
+%files -n %{?scl_prefix}python2-%{modname}-tests
 %{python2_sitearch}/zmq/tests
 
 %if 0%{?with_python3}
-%files -n python%{python3_pkgversion}-zmq
+%files -n %{?scl_prefix}python%{python_pkgversion}-zmq
 %license COPYING.*
 %doc README.md
 # examples/
-%{python3_sitearch}/%{srcname}-*.egg-info
-%{python3_sitearch}/zmq
-%exclude %{python3_sitearch}/zmq/tests
+%{python_sitearch}/%{srcname}-*.egg-info
+%{python_sitearch}/zmq
+%exclude %{python_sitearch}/zmq/tests
 
-%files -n python%{python3_pkgversion}-zmq-tests
-%{python3_sitearch}/zmq/tests
+%files -n %{?scl_prefix}python%{python_pkgversion}-zmq-tests
+%{python_sitearch}/zmq/tests
 %endif
 
 
 %changelog
+* Tue Oct 03 2017 Augusto Mecking Caringi <acaringi@redhat.com> - 16.0.2-6
+- scl conversion
+
 * Thu Aug 03 2017 Fedora Release Engineering <releng@fedoraproject.org> - 16.0.2-5
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_27_Binutils_Mass_Rebuild
 
