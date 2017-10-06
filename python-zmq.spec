@@ -15,7 +15,7 @@
 
 Name:           %{?scl_prefix}python-zmq
 Version:        16.0.2
-Release:        6%{?dist}
+Release:        7%{?dist}
 Summary:        Software library for fast, message-based applications
 
 Group:          Development/Libraries
@@ -85,7 +85,7 @@ This package contains the python bindings.
 Summary:        Software library for fast, message-based applications
 Group:          Development/Libraries
 License:        LGPLv3+
-Requires:       python2-zmq = %{version}-%{release}
+Requires:       %{?scl_prefix}python2-zmq = %{version}-%{release}
 %{!?scl:%{?python_provide:%python_provide python2-%{modname}-tests}}
 %description -n %{?scl_prefix}python2-zmq-tests
 The 0MQ lightweight messaging kernel is a library which extends the
@@ -119,7 +119,7 @@ This package contains the python bindings.
 Summary:        Software library for fast, message-based applications
 Group:          Development/Libraries
 License:        LGPLv3+
-Requires:       python%{python_pkgversion}-zmq = %{version}-%{release}
+Requires:       %{?scl_prefix}python%{python_pkgversion}-zmq = %{version}-%{release}
 %{!?scl:%{?python_provide:%python_provide python%{python_pkgversion}-%{modname}-tests}}
 %description -n %{?scl_prefix}python%{python_pkgversion}-zmq-tests
 The 0MQ lightweight messaging kernel is a library which extends the
@@ -233,6 +233,9 @@ CFLAGS="%{optflags}" %{__python} setup.py build_ext --inplace
 
 
 %changelog
+* Fri Oct 06 2017 Augusto Mecking Caringi <acaringi@redhat.com> - 16.0.2-7
+- fixed test package runtime dependency (added missing scl_prefix)
+
 * Tue Oct 03 2017 Augusto Mecking Caringi <acaringi@redhat.com> - 16.0.2-6
 - scl conversion
 
